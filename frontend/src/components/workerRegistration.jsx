@@ -219,6 +219,7 @@ const WorkerRegistration = () => {
         }
       );
 
+      
       const data = await response.json();
 
       if (response.ok && data.success) {
@@ -237,9 +238,11 @@ const WorkerRegistration = () => {
     }
   };
 
+
+
   const uploadToCloudinary = async (file, folder) => {
-    const cloudName = "dvuwbvlth"; // 🔥 your Cloudinary cloud name
-    const uploadPreset = "blueCollarJob"; // 🔥 unsigned upload preset
+    const cloudName = "dvuwbvlth"; //  your Cloudinary cloud name
+    const uploadPreset = "blueCollarJob"; //  unsigned upload preset
 
     const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
 

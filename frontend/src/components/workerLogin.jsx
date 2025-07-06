@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './workerLogin.css';
+
+const API_BASE_URL = 'http://localhost:5000/api/auth';
 
 const WorkerLogin = () => {
   const navigate = useNavigate();
   const [loginData, setLoginData] = useState({
-    fullName: '',
     phone: '',
     password: ''
   });
@@ -26,59 +28,37 @@ const WorkerLogin = () => {
     setError('');
 
     // Basic validation
-    if (!loginData.fullName || !loginData.phone || !loginData.password) {
-      setError('All fields are required');
+    if (!loginData.phone || !loginData.password) {
+      setError('Phone number and password are required');
       setIsLoading(false);
       return;
     }
 
     try {
-      // Simulate API call - replace with actual API call
-      const response = await mockLoginAPI(
-        loginData.fullName,
-        loginData.phone,
-        loginData.password
-      );
-      
-      // Store JWT token and user data in localStorage
-      localStorage.setItem('workerToken', response.token);
-      localStorage.setItem('workerData', JSON.stringify({
-        fullName: loginData.fullName,
-        phone: loginData.phone
-      }));
-      
-      // Redirect to dashboard
-      navigate('/worker-dashboard');
+      const response = await axios.post(`${API_BASE_URL}/login`, {
+        mobile: loginData.phone,
+        password: loginData.password
+      });
+
+      if (response.data.success) {
+        // Store JWT token and user data in localStorage
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // Redirect to dashboard based on user role
+        if (response.data.user.role === 'worker') {
+          navigate('/worker-dashboard');
+        } else {
+          navigate('/dashboard');
+        }
+      }
     } catch (err) {
-      setError(err.message || 'Login failed. Please try again.');
+      const errorMessage = err.response?.data?.message || 'Login failed. Please try again.';
+      setError(errorMessage);
+      console.error('Login error:', err);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Mock API function - replace with actual API call
-  const mockLoginAPI = (fullName, phone, password) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // Basic mock validation
-        if (phone.length < 10) {
-          reject(new Error('Invalid phone number'));
-          return;
-        }
-        if (password.length < 6) {
-          reject(new Error('Password must be at least 6 characters'));
-          return;
-        }
-
-        resolve({
-          token: 'mock-jwt-token-' + Math.random().toString(36).substr(2),
-          user: {
-            fullName,
-            phone
-          }
-        });
-      }, 1500);
-    });
   };
 
   return (
@@ -91,19 +71,6 @@ const WorkerLogin = () => {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="fullName">Full Name</label>
-            <input
-              type="text"
-              id="fullName"
-              name="fullName"
-              value={loginData.fullName}
-              onChange={handleChange}
-              required
-              placeholder="Enter your full name"
-            />
-          </div>
-
-          <div className="form-group">
             <label htmlFor="phone">Phone Number</label>
             <input
               type="tel"
@@ -111,11 +78,10 @@ const WorkerLogin = () => {
               name="phone"
               value={loginData.phone}
               onChange={handleChange}
+              placeholder="Enter your registered phone number"
               required
-              placeholder="Enter your phone number"
             />
           </div>
-
           <div className="form-group">
             <label htmlFor="password">Password</label>
             <input
@@ -124,8 +90,8 @@ const WorkerLogin = () => {
               name="password"
               value={loginData.password}
               onChange={handleChange}
-              required
               placeholder="Enter your password"
+              required
               minLength="6"
             />
           </div>
